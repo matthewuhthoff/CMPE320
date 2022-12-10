@@ -1,0 +1,128 @@
+#include "insultgenerator_20mau.h"
+
+
+void InsultGenerator::initialize(){
+    std::string lineText;
+    std::string fileName = "InsultsSource.txt";
+    //std::string fileName = "wronnn.txt";
+    std::ifstream myFile(fileName);
+
+    if (!myFile.is_open()) {
+        throw FileException(fileName);
+    }
+    else {
+        while (myFile.good()) {
+            std::string lineAdjectives[3];
+            std::getline(myFile, lineText);
+            std::stringstream lineStream(lineText);
+            int i = 0;
+            while (lineStream.good() && i < 3) {
+                lineStream >> lineAdjectives[i];
+                lineAdjectives[i].insert(0, " ");
+                ++i;
+            }     
+            adjective1.emplace_back(lineAdjectives[0]);
+            adjective2.emplace_back(lineAdjectives[1]);
+            adjective3.emplace_back(lineAdjectives[2]);
+        }
+
+    }
+}
+
+
+
+std::vector<std::string> InsultGenerator::generate(int numInsults) {
+    std::vector<std::string> storedInsults;
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    if (numInsults < 0 || numInsults > 10000) {
+        throw NumInsultsOutOfBounds(numInsults);
+    }
+    else {
+        for (int i = 0; i < numInsults; ++i) {
+            int rando;
+            std::string insult = "";
+            rando = std::rand() % (adjective1.size() - 1);
+            insult += startInsult;
+            insult += adjective1.at(rando);
+
+            rando = std::rand() % (adjective2.size() - 1);
+            insult += adjective2.at(rando);
+
+            rando = std::rand() % (adjective3.size() - 1);
+            insult += adjective3.at(rando);            
+
+            insult += endInsult;
+            
+            //storedInsults.emplace_back(insult);
+        }
+    }
+    storedInsults.erase(std::unique(storedInsults.begin(), storedInsults.end()), storedInsults.end());
+
+    std::sort(storedInsults.begin(), storedInsults.end(), [](const std::string str1, const std::string str2) {
+        return str2 > str1;
+    });
+    while (storedInsults.size() < numInsults){
+        std::string addInsult = talkToMe();
+        auto addIter = std::upper_bound(storedInsults.begin(), storedInsults.end(), addInsult);
+        if (addInsult != *(addIter)){
+            storedInsults.insert(addIter, addInsult);
+        }
+    }
+    return storedInsults;
+}
+
+void InsultGenerator::generateAndSave(std::string filePath, int numInsults) {
+    std::ofstream myFile(filePath);
+    std::vector<std::string> insultList = generate(numInsults);
+    if (myFile.is_open()){
+        for (const auto& insult : insultList){
+            myFile << insult << "\n";
+        }
+    }
+myFile.close();
+}
+
+
+std::string InsultGenerator::talkToMe(){
+    int rando;
+    std::string returnString = "";
+
+    returnString += startInsult;
+
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
+    rando = std::rand() % (adjective1.size() - 1);
+    returnString += adjective1.at(rando);
+
+    rando = std::rand() % (adjective2.size() - 1);
+    returnString += adjective2.at(rando);
+
+    rando = std::rand() % (adjective3.size() - 1); 
+    returnString += adjective3.at(rando);
+
+    returnString += endInsult;
+    return returnString;
+}
+
+NumInsultsOutOfBounds::NumInsultsOutOfBounds(int impossibleNumber){
+    incompatibleNumInsults = impossibleNumber;
+}
+
+std::string NumInsultsOutOfBounds::what(){
+    std::string returnString = "";
+    returnString += "It it not possible to create ";
+    returnString += std::to_string(incompatibleNumInsults);
+    returnString += " insults";
+    return returnString;
+}
+
+FileException::FileException(std::string wrongFileName){
+    incorrectFileName = wrongFileName;
+}
+
+std::string FileException::what(){
+    std::string returnString = "";
+    returnString += "Could not open the file ";
+    returnString += incorrectFileName;
+    return returnString;
+}
